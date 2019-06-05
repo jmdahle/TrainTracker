@@ -43,10 +43,9 @@ $("#trainStart").on("change", function () {
  */
 $("#trainFreq").on("change", function () {
     var testFreq = $("#trainFreq").val();
-    console.log(testFreq, parseInt(testFreq), testFreq === parseInt(testFreq));
-    // is the frequency an integer?
-    if (!(testFreq == parseInt(testFreq)) || (parseInt(testFreq) < 1)) {
-        alert("The train frequency is not valid.  Please enter a whole number of minutes (greater than 0)");
+    // is the frequency an integer between 1 and 1440?
+    if (!(testFreq == parseInt(testFreq)) || (parseInt(testFreq) < 1) || (parseInt(testFreq) > 1440))  {
+        alert("The train frequency is not valid.  Please enter a whole number of minutes (greater than 0, less than or equal to 1440)");
         flagFreq = false;
     } else {
         flagFreq = true;
@@ -102,10 +101,22 @@ function dbAddTrain(name, dest, initialTime, frequency) {
     console.log("data set to fb", newTrainRef);
 }
 
+/**
+ * clears the table with train times
+ */
 function clearTrainTable() {
     $("#trainTable").empty();
 }
 
+/**
+ * Adds the train to the train schedule table
+ * 
+ * @param {string} key 
+ * @param {string} name 
+ * @param {string} dest 
+ * @param {string/moment() using format HH:mm} initialTime 
+ * @param {number} frequency 
+ */
 function tableAddTrain(key, name, dest, initialTime, frequency) {
     var newTR = $("<tr>");
     newTR.attr("key", key);
@@ -116,16 +127,41 @@ function tableAddTrain(key, name, dest, initialTime, frequency) {
     newTD2.text(dest);
     var newTD3 = $("<td>");
     newTD3.text(frequency + " minutes");
+    // get the next train time
+    var nextTrain = trainNext(initialTime,frequency);
     var newTD4 = $("<td>");
-    newTD4.text("next");
     var newTD5 = $("<td>");
-    newTD5.text("min away");
+    if (parseInt(nextTrain[0]) === 0) {
+        newTD5.text("arriving now");
+        newTD4.text("now - " + nextTrain[1].format("HH:mm"));
+    } else {
+        newTD4.text(nextTrain[1].format("HH:mm"));
+        newTD5.text(nextTrain[0] + " min away");
+    }
     newTR.append(newTD1);
     newTR.append(newTD2);
     newTR.append(newTD3);
     newTR.append(newTD4);
     newTR.append(newTD5);
     $("#trainTable").append(newTR);
+}
+
+/**
+ * Calculates and returns minutes to next train and arrival time
+ * 
+ * @param {string/moment() format HH:mm } startTime 
+ * @param {number} freq 
+ */
+function trainNext (startTime, freq) {
+    // use moment() to set startTime, passed in HH:mm format
+    var startMoment = moment(startTime, "HH:mm");
+    var minDiff = moment().diff(startMoment, "minutes");
+    if (minDiff < 0) { minDiff += 1440 } // if the start time is negative ("in the future"), then it started 1 day ago, so add 1 day's worth of minutes, 1440.
+    console.log(startMoment.format("HH:mm"), minDiff);
+    // divide the number of elapsed minute since start time by the frequency; the remainder the the number of elasped minutes into the next frequency
+    var timeToNext = freq - minDiff%freq;
+    var timeNext = moment().add(timeToNext,"minutes");
+    return [timeToNext, timeNext];
 }
 
 /** 
