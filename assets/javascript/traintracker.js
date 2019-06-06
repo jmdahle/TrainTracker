@@ -31,7 +31,7 @@ $("#trainStart").on("change", function () {
     // train start in HH:MM format?
     var fmtRegEx = /^([01]\d|2[0-3]):?([0-5]\d)$/
     if (!fmtRegEx.test(testStart)) {
-        alert("The train start time is not valid.  Enter in 24 hour time format (HH:MM)");
+        alert("The train start time is not valid.  Enter in 24 hour time format (HH:mm)");
         flagInitialTrain = false;
     } else {
         flagInitialTrain = true;
@@ -119,8 +119,13 @@ function clearTrainTable() {
  */
 function tableAddTrain(key, name, dest, initialTime, frequency) {
     var newTR = $("<tr>");
-    newTR.attr("key", key);
-    // table column order: name, dest, freq, next, min away
+    // table column order: action, name, dest, freq, next, min away
+    var newTD0 = $("<td>");
+    var newIco1 = $("<i>");
+    newIco1.attr("class","fa fa-trash-o remTrain");
+    newIco1.attr("id",key);
+    newIco1.attr("onclick","remTrain('"+key+"')");
+    newTD0.append(newIco1);
     var newTD1 = $("<td>");
     newTD1.text(name);
     var newTD2 = $("<td>");
@@ -138,6 +143,7 @@ function tableAddTrain(key, name, dest, initialTime, frequency) {
         newTD4.text(nextTrain[1].format("HH:mm"));
         newTD5.text(nextTrain[0] + " min away");
     }
+    newTR.append(newTD0);
     newTR.append(newTD1);
     newTR.append(newTD2);
     newTR.append(newTD3);
@@ -184,3 +190,19 @@ db.ref("trains").on("value", function (s) {
     // log the error
     console.log("The read failed: " + errorObject.code);
 });
+
+/**
+ * Removes the selected train from the db
+ * 
+ * @param {string} trainKey 
+ */
+function remTrain(trainKey) {
+    var nodeDelete = db.ref("trains/"+trainKey);
+    nodeDelete.remove()
+        .then(function() {
+            console.log("Remove succeeded.")
+        })
+        .catch(function(error) {
+            console.log("Remove failed: " + error.message)
+        });
+}
