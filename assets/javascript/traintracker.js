@@ -119,28 +119,43 @@ function clearTrainTable() {
  */
 function tableAddTrain(key, name, dest, initialTime, frequency) {
     var newTR = $("<tr>");
-    // table column order: action, name, dest, freq, next, min away
+    // table column order: 0-action, 1-name, 2-dest, 3-freq, 4-next, 5-min away
+    // column 0 - action buttons (changes on edit)
     var newTD0 = $("<td>");
-    var newIco1 = $("<i>");
-    newIco1.attr("class","fa fa-trash-o remTrain");
-    newIco1.attr("id",key);
-    newIco1.attr("onclick","remTrain('"+key+"')");
-    newTD0.append(newIco1);
+    newTD0.attr("id","action-"+key);
+    var newIcoA = $("<i>");
+    newIcoA.attr("class", "fa fa-pencil-square-o");
+    newIcoA.attr("onclick", "editTrain('" + key + "')");
+    newIcoA.tooltip({placement: 'top', title: 'Edit Train'});
+    var newIcoB = $("<i>");
+    newIcoB.attr("class","fa fa-trash-o remTrain");
+    newIcoB.attr("onclick","remTrain('"+key+"')");
+    newIcoB.tooltip({placement: 'top', title: 'Remove Train'});
+    newTD0.append(newIcoA);
+    newTD0.append("&nbsp;");
+    newTD0.append(newIcoB);
+    // column 1 - train name (editable)
     var newTD1 = $("<td>");
+    newTD1.attr("id","data-name-"+key);
     newTD1.text(name);
+    // column 2 - train destination (editable)
     var newTD2 = $("<td>");
+    newTD2.attr("id","data-dest-"+key);
     newTD2.text(dest);
+    // column 3  - train frequency
     var newTD3 = $("<td>");
     newTD3.text(frequency + " minutes");
-    // get the next train time
+    // get the next train time (editable)
     var nextTrain = trainNext(initialTime,frequency);
+    // column 4 - next train arriving
     var newTD4 = $("<td>");
+    newTD4.attr("id","data-time-"+key);
+    newTD4.text(nextTrain[1].format("HH:mm"));
+    // column 5 - time until next train
     var newTD5 = $("<td>");
     if (parseInt(nextTrain[0]) === 0) {
         newTD5.text("arriving now");
-        newTD4.text("now - " + nextTrain[1].format("HH:mm"));
     } else {
-        newTD4.text(nextTrain[1].format("HH:mm"));
         newTD5.text(nextTrain[0] + " min away");
     }
     newTR.append(newTD0);
@@ -175,7 +190,7 @@ function trainNext (startTime, freq) {
  */
 db.ref("trains").on("value", function (s) {
     // log the data in trains Reference
-    console.log(s.val());
+    // console.log(s.val());
     // clear the train table
     clearTrainTable();
     // go through each key in trains
@@ -188,7 +203,7 @@ db.ref("trains").on("value", function (s) {
     });
 }, function (e) {
     // log the error
-    console.log("The read failed: " + errorObject.code);
+    console.log("The read failed: " + e.code);
 });
 
 /**
@@ -197,12 +212,112 @@ db.ref("trains").on("value", function (s) {
  * @param {string} trainKey 
  */
 function remTrain(trainKey) {
+    // clear the tooltips
+    $(".fa").tooltip('dispose');
     var nodeDelete = db.ref("trains/"+trainKey);
     nodeDelete.remove()
         .then(function() {
             console.log("Remove succeeded.")
         })
-        .catch(function(error) {
-            console.log("Remove failed: " + error.message)
+        .catch(function(e) {
+            console.log("Remove failed: " + e.message)
         });
+}
+
+/**
+ * Function to permit updating train name, destination, and/or arrival time
+ * 
+ * @param {string} trainKey 
+ */
+function editTrain(trainKey) {
+    // clear the tooltips
+    $(".fa").tooltip('dispose');
+    // replace edit and delete icons with update icon
+    $("#action-"+trainKey).empty();
+    var newIcoA = $("<i>");
+    newIcoA.attr("class", "fa fa-arrow-circle-o-up");
+    newIcoA.attr("onclick", "updateTrain('" + trainKey + "')");
+    newIcoA.tooltip({placement: 'top', title: 'Update Train'});
+    var newIcoB = $("<i>");
+    newIcoB.attr("class","fa fa-ban");
+    newIcoB.attr("onclick","cancelUpdate('"+trainKey+"')");
+    newIcoB.tooltip({placement: 'top', title: 'Cancel Update'});
+    $("#action-"+trainKey).append(newIcoA);
+    $("#action-"+trainKey).append("&nbsp;");
+    $("#action-"+trainKey).append(newIcoB);
+    // get the current values and clear the text
+    var cName = $("#data-name-"+trainKey).text();
+    var cDest = $("#data-dest-"+trainKey).text();
+    var cTime = $("#data-time-"+trainKey).text();
+    $("#data-name-"+trainKey).text("");
+    $("#data-dest-"+trainKey).text("");
+    $("#data-time-"+trainKey).text("");
+    // replace name text with input box
+    nameInput = $("<input>");
+    nameInput.attr("type","text");
+    nameInput.attr("class","form-control");
+    nameInput.attr("value",cName);
+    nameInput.attr("id","input-name-"+trainKey);
+    $("#data-name-"+trainKey).append(nameInput);
+    // replace dest text with input box
+    destInput = $("<input>");
+    destInput.attr("type","text");
+    destInput.attr("class","form-control");
+    destInput.attr("value",cDest);
+    destInput.attr("id","input-dest-"+trainKey);
+    $("#data-dest-"+trainKey).append(destInput);
+    // replace time text with input box
+    timeInput = $("<input>");
+    timeInput.attr("type","text");
+    timeInput.attr("class","form-control");
+    timeInput.attr("value",cTime);
+    timeInput.attr("id","input-time-"+trainKey);
+    $("#data-time-"+trainKey).append(timeInput);
+}
+
+/**
+ * Cancels any updates to an existing train (cancels "edit" and return to normal train table)
+ * 
+ * @param {string} trainKey 
+ */
+function cancelUpdate(trainKey) {
+    // clear the tooltips
+    $(".fa").tooltip('dispose');
+    // clear the table and re-post
+    db.ref("trains").once("value", function(s) {
+        // clear the train table
+        clearTrainTable();
+        // go through each key in trains
+        s.forEach(function (trainKeys) {
+            var key = trainKeys.key;
+            var trainData = trainKeys.val()
+            console.log(key, trainData);
+            // use train data to update table
+            tableAddTrain(key, trainData.trainName, trainData.trainDest, trainData.trainFirst, trainData.trainFreq)
+        });
+    }, function (e) {
+        // log the error
+        console.log("The read failed: " + e.code);
+    });
+}
+
+/**
+ * Updates db with modified train information
+ * 
+ * @param {string} trainKey 
+ */
+function updateTrain(trainKey) {
+    // clear the tooltips
+    $(".fa").tooltip('dispose');
+    var updName = $("#input-name-"+trainKey).val().trim();
+    var updDest = $("#input-dest-"+trainKey).val().trim();
+    var updTime = $("#input-time-"+trainKey).val().trim();
+    var nodeUpdate = db.ref("trains/"+trainKey);
+    nodeUpdate.update(
+        {
+            trainName: updName,
+            trainDest: updDest,
+            trainFirst: updTime
+        }
+    );
 }
