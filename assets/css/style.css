@@ -5,3 +5,21 @@
 .card {
     margin-bottom: 32px;
 }
+
+#trainFreqWarn, #trainStartWarn, #submitWarn {
+    color: red;
+    font-size: 70%;
+    margin-left: 10px;
+}
+
+[isvalid="valid"] {
+    background-color: lightgreen;
+}
+
+[isvalid="invalid"] {
+    background-color: lightpink;
+}
+
+[isvalid="unchecked"] {
+    background-color: white;
+}

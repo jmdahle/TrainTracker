@@ -74,7 +74,6 @@ function timerCount() {
     }
 }
 
-
 /**
  * Checks initial train time for correct format.  Alerts if it does not meet HH:MM 24-hour time format
  */
@@ -83,10 +82,14 @@ $("#trainStart").on("change", function () {
     // train start in HH:MM format?
     var fmtRegEx = /^([01]\d|2[0-3]):?([0-5]\d)$/
     if (!fmtRegEx.test(testStart)) {
-        alert("The train start time is not valid.  Enter in 24 hour time format (HH:mm)");
+        $("#trainStartWarn").text("The train start time is not valid.  Enter in 24 hour time format (HH:mm)");
+        $("#trainStart").attr("isvalid","invalid");
         flagInitialTrain = false;
     } else {
         flagInitialTrain = true;
+        $("#trainStartWarn").text("");
+        $("#submitWarn").text("");
+        $("#trainStart").attr("isvalid","valid");
     }
 });
 
@@ -98,10 +101,14 @@ $("#trainFreq").on("change", function () {
     var testFreq = $("#trainFreq").val();
     // is the frequency an integer between 1 and 1440?
     if (!(testFreq == parseInt(testFreq)) || (parseInt(testFreq) < 1) || (parseInt(testFreq) > 1440)) {
-        alert("The train frequency is not valid.  Please enter a whole number of minutes (greater than 0, less than or equal to 1440)");
+        $("#trainFreqWarn").text("The train frequency is not valid.  Please enter a whole number of minutes (greater than 0, less than or equal to 1440)");
+        $("#trainFreq").attr("isvalid","invalid");
         flagFreq = false;
     } else {
         flagFreq = true;
+        $("#trainFreqWarn").text("");
+        $("#submitWarn").text("");
+        $("#trainFreq").attr("isvalid","valid");
     }
 });
 
@@ -130,8 +137,10 @@ $("#btnAddTrain").on("click", function () {
         // set flags back to false
         flagInitialTrain = false;
         flagFreq = false;
+        $("#trainStart").attr("isvalid","unchecked");
+        $("#trainFreq").attr("isvalid","unchecked");
     } else {
-        alert("You have not entered valid train information.  Please review and re-submit");
+        $("#submitWarn").text("You have not entered valid train information.  Please review and re-submit");
     }
 });
 
@@ -233,10 +242,16 @@ function trainNext(startTime, freq) {
     // use moment() to set startTime, passed in HH:mm format
     var startMoment = moment(startTime, "HH:mm");
     var minDiff = moment().diff(startMoment, "minutes");
-    if (minDiff < 0) { minDiff += 1439 } // if the start time is negative ("in the future"), then it started 1 day ago, so add 1 day's worth of minutes, 1440.
-    console.log(startMoment.format("HH:mm"), minDiff);
+    if (minDiff < 0) { 
+        // Train is in the future, so the first train of the day has not yet arrived
+        timeToNext = - minDiff+1;
+        // OLD CODE - minDiff += 1439} -
+        // I REPLACED WITH CODE ABOVE TO REMOVE MY ASSUMPTION ABOUT "CONTINOUS DAYS".  SEE THE README FILE FOR MORE INFORMATION
+    } else {
+    // First train was in the past, so calculate the number minutes remaining until the next arrival based on the frequency
     // divide the number of elapsed minute since start time by the frequency; the remainder the the number of elasped minutes into the next frequency
     var timeToNext = freq - minDiff % freq;
+    }
     var timeNext = moment().add(timeToNext, "minutes");
     return [timeToNext, timeNext];
 }
@@ -293,7 +308,7 @@ function editTrain(trainKey) {
         $(".fa").tooltip('dispose');
         // set the updating flag to prevent other train updates at the same time
         flagUpdating = true;
-        // replace edit and delete icons with update icon
+        // replace edit and delete icons with update and cancel icons
         $("#action-" + trainKey).empty();
         var newIcoA = $("<i>");
         newIcoA.attr("class", "fa fa-arrow-circle-o-up");

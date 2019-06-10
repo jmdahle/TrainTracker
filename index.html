@@ -66,14 +66,14 @@
                         <input type="text" class="form-control" id="trainDest">
                     </div>
                     <div class="form-group">
-                        <label for="trainStart">First Train (HH:MM - use 24 hr time)</label>
-                        <input type="text" class="form-control" id="trainStart">
+                        <label for="trainStart">First Train (HH:MM - use 24 hr time)</label><span id="trainStartWarn"></span>
+                        <input type="text" class="form-control" id="trainStart" isvalid="unchecked">
                     </div>
                     <div class="form-group">
-                        <label for="trainFreq">Frequency (min)</label>
-                        <input type="number" class="form-control" id="trainFreq">
+                        <label for="trainFreq">Frequency (min)</label><span id="trainFreqWarn"></span>
+                        <input type="number" class="form-control" id="trainFreq" isvalid="unchecked">
                     </div>
-                    <button id="btnAddTrain" type="submit" class="btn btn-primary">Submit</button>
+                    <button id="btnAddTrain" type="submit" class="btn btn-primary">Submit</button><span id="submitWarn"></span>
                 </form>
             </div>
         </div>
