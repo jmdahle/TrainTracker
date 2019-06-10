@@ -6,7 +6,7 @@
     margin-bottom: 32px;
 }
 
-#trainFreqWarn, #trainStartWarn, #submitWarn {
+#trainFreqWarn, #trainStartWarn, #submitWarn, #timeInputWarn {
     color: red;
     font-size: 70%;
     margin-left: 10px;

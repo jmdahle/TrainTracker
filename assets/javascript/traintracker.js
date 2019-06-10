@@ -347,8 +347,13 @@ function editTrain(trainKey) {
         timeInput.attr("type", "text");
         timeInput.attr("class", "form-control");
         timeInput.attr("value", cTime);
+        timeInput.attr("isvalid","unchecked");
         timeInput.attr("id", "input-time-" + trainKey);
         $("#data-time-" + trainKey).append(timeInput);
+        // add a warning
+        var timeInputWarn = $("<div>");
+        timeInputWarn.attr("id","timeInputWarn");
+        $("#data-time-" + trainKey).append(timeInputWarn);
         // set editTrainTime flag to true
         flagUpdateTime = true;
         // add handling for validating time
@@ -357,9 +362,12 @@ function editTrain(trainKey) {
             // train start in HH:MM format?
             var fmtRegEx = /^([01]\d|2[0-3]):?([0-5]\d)$/
             if (!fmtRegEx.test(testStart)) {
-                alert("The new train time is not valid.  Enter in 24 hour time format (HH:mm)");
+                $("#input-time-" + trainKey).attr("isvalid","invalid");
+                $("#timeInputWarn").text("Train time is not in 24 hour time format (HH:mm)");
                 flagUpdateTime = false;
             } else {
+                $("#input-time-" + trainKey).attr("isvalid","valid");
+                $("#timeInputWarn").text("");
                 flagUpdateTime = true;
             }
         });
