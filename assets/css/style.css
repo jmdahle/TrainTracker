@@ -6,6 +6,10 @@
     margin-bottom: 32px;
 }
 
+#timer {
+    color: darkblue;
+}
+
 #trainFreqWarn, #trainStartWarn, #submitWarn, #timeInputWarn {
     color: red;
     font-size: 70%;

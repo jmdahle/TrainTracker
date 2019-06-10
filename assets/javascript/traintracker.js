@@ -124,7 +124,7 @@ $("#btnAddTrain").on("click", function () {
     var newTrainStart = $("#trainStart").val().trim();
     var newTrainFreq = $("#trainFreq").val().trim();
     // debug - log to console
-    console.log("new train:", newTrainName, newTrainDest, newTrainStart, newTrainFreq, flagFreq,flagInitialTrain);
+    // console.log("new train:", newTrainName, newTrainDest, newTrainStart, newTrainFreq, flagFreq,flagInitialTrain);
     // validate start and freq
     if (flagFreq && flagInitialTrain) {
         // add train to database
@@ -155,7 +155,7 @@ $("#btnAddTrain").on("click", function () {
 function dbAddTrain(name, dest, initialTime, frequency) {
     // add a record to the db, retrieve the new key
     var newTrainRef = db.ref("trains").push();
-    console.log("new push to fb", newTrainRef);
+    // console.log("new push to fb", newTrainRef);
     // add the train info to the db using the key
     newTrainRef.set({
         trainName: name,
@@ -163,7 +163,6 @@ function dbAddTrain(name, dest, initialTime, frequency) {
         trainFirst: initialTime,
         trainFreq: frequency
     });
-    console.log("data set to fb", newTrainRef);
 }
 
 /**
@@ -268,7 +267,7 @@ db.ref("trains").on("value", function (s) {
     s.forEach(function (trainKeys) {
         var key = trainKeys.key;
         var trainData = trainKeys.val()
-        console.log(key, trainData);
+        // console.log(key, trainData);
         // use train data to update table
         tableAddTrain(key, trainData.trainName, trainData.trainDest, trainData.trainFirst, trainData.trainFreq)
     });
@@ -383,7 +382,7 @@ function trainSchedule () {
         s.forEach(function (trainKeys) {
             var key = trainKeys.key;
             var trainData = trainKeys.val()
-            console.log(key, trainData);
+            // console.log(key, trainData);
             // use train data to update table
             tableAddTrain(key, trainData.trainName, trainData.trainDest, trainData.trainFirst, trainData.trainFreq)
         });

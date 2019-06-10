@@ -8,7 +8,7 @@ The train schedule is updated every minute, but the countdown is suspended if an
 
 ## Technical Notes
 1. Alerts the user if an invalid frequency or invalid train time is entered.  Submitting invalid information for those fields is not permitted (will not add the train).
-2. Uses Bootstrap and JQery
+2. Uses Bootstrap and JQuery
 
 ### Special Note
 I had originally calculated trian arrivals for times that are "in the future" assuming that "initial train time" entered (and stored) would have happened "1 day ago."
