@@ -5,8 +5,10 @@ var flagInitialTrain = false; // flag for validating time of a new train
 var flagFreq = false; // flag for validating frequency of new train
 var flagUpdateTime = false; // flag for validating the time on an existing train
 var flagUpdating = false; // flag for indicating if a train is being updated; prevents multiple train updates
+var updatingTrainKey = ""; // global for storing the key for the train being updated
 var timerMilliSeconds = 60000;
 var timerIsStarted = false;
+var userSignedIn = false;
 
 /**
  * global database connection
@@ -27,9 +29,84 @@ firebase.initializeApp(firebaseConfig);
 // database global variable
 var db = firebase.database();
 
+// global user authentication
+var authProvider = new firebase.auth.GoogleAuthProvider();
+authProvider.addScope("email");
+authProvider.addScope("profile");
+
+// check for user
+firebase.auth().onAuthStateChanged(function (user) {
+    if (user) {
+        // User is signed in.
+        userSignedIn = true;
+        // show train admin card
+        $(".trainAdmin").show();
+        // show the first collumn (admin features)
+        $("td:nth-child(1),th:nth-child(1)").show();
+        var uName = user.displayName;
+        var uEmail = user.email;
+        var uPhotoUrl = user.photoURL;
+        $("#msgLogin").html("You are logged in as " + uName);
+        $("#btnLogin").text("Logout");
+        $("#btnLogin").on("click", function () {
+            userLogout();
+        });
+    } else {
+        // No user is signed in.
+        userSignedIn = false;
+        // hide train admin card
+        $(".trainAdmin").hide();
+        // hide first column of table (no action can be called).
+        $("td:nth-child(1),th:nth-child(1)").hide();
+        $("#msgLogin").text("Guest Account - Log in for administrator privilieges");
+        $("#btnLogin").text("Login");
+        $("#btnLogin").on("click", function () {
+            userLogin();
+        });
+    }
+});
+
 // start the timer
 timerStart()
 timerIsStarted = true;
+
+
+
+// user login
+function userLogin() {
+    firebase.auth().signInWithPopup(authProvider).then(function (authResult) {
+        console.log("authResult", authResult);
+        // This gives you a Google Access Token. You can use it to access the Google API.
+        var token = authResult.credential.accessToken;
+        // The signed-in user info.
+        var user = authResult.user;
+        // ...
+    }).catch(function (authError) {
+        // Handle Errors here.
+        console.log("authError", authError);
+        var errorCode = authError.code;
+        var errorMessage = authError.message;
+        // The email of the user's account used.
+        var email = authError.email;
+        // The firebase.auth.AuthCredential type that was used.
+        var credential = authError.credential;
+        // ...
+    });
+}
+
+// user logout
+function userLogout() {
+    if (flagUpdating) {
+        cancelUpdate(updatingTrainKey);
+    }
+    firebase.auth().signOut().then(function () {
+        // Sign-out successful.
+        console.log("logout successful")
+    }).catch(function (error) {
+        // An error happened.
+        console.log("logout error", error);
+    });
+}
 
 /**
  * Starts the timer
@@ -55,7 +132,7 @@ function timerStop() {
  */
 function timerUpdate() {
     // update display of timer on browser window
-    var timeString = timerMilliSeconds/1000;
+    var timeString = timerMilliSeconds / 1000;
     $("#timer").text(timeString + " seconds until next update");
 }
 
@@ -83,13 +160,13 @@ $("#trainStart").on("change", function () {
     var fmtRegEx = /^([01]\d|2[0-3]):?([0-5]\d)$/
     if (!fmtRegEx.test(testStart)) {
         $("#trainStartWarn").text("The train start time is not valid.  Enter in 24 hour time format (HH:mm)");
-        $("#trainStart").attr("isvalid","invalid");
+        $("#trainStart").attr("isvalid", "invalid");
         flagInitialTrain = false;
     } else {
         flagInitialTrain = true;
         $("#trainStartWarn").text("");
         $("#submitWarn").text("");
-        $("#trainStart").attr("isvalid","valid");
+        $("#trainStart").attr("isvalid", "valid");
     }
 });
 
@@ -102,13 +179,13 @@ $("#trainFreq").on("change", function () {
     // is the frequency an integer between 1 and 1440?
     if (!(testFreq == parseInt(testFreq)) || (parseInt(testFreq) < 1) || (parseInt(testFreq) > 1440)) {
         $("#trainFreqWarn").text("The train frequency is not valid.  Please enter a whole number of minutes (greater than 0, less than or equal to 1440)");
-        $("#trainFreq").attr("isvalid","invalid");
+        $("#trainFreq").attr("isvalid", "invalid");
         flagFreq = false;
     } else {
         flagFreq = true;
         $("#trainFreqWarn").text("");
         $("#submitWarn").text("");
-        $("#trainFreq").attr("isvalid","valid");
+        $("#trainFreq").attr("isvalid", "valid");
     }
 });
 
@@ -137,8 +214,8 @@ $("#btnAddTrain").on("click", function () {
         // set flags back to false
         flagInitialTrain = false;
         flagFreq = false;
-        $("#trainStart").attr("isvalid","unchecked");
-        $("#trainFreq").attr("isvalid","unchecked");
+        $("#trainStart").attr("isvalid", "unchecked");
+        $("#trainFreq").attr("isvalid", "unchecked");
     } else {
         $("#submitWarn").text("You have not entered valid train information.  Please review and re-submit");
     }
@@ -184,7 +261,7 @@ function clearTrainTable() {
 function tableAddTrain(key, name, dest, initialTime, frequency) {
     var newTR = $("<tr>");
     // table column order: 0-action, 1-name, 2-dest, 3-freq, 4-next, 5-min away
-    // column 0 - action buttons (changes on edit)
+    // column 0 - action buttons (changes on edit) - hidden if not logged in (no Admin privileges)
     var newTD0 = $("<td>");
     newTD0.attr("id", "action-" + key);
     var newIcoA = $("<i>");
@@ -241,15 +318,15 @@ function trainNext(startTime, freq) {
     // use moment() to set startTime, passed in HH:mm format
     var startMoment = moment(startTime, "HH:mm");
     var minDiff = moment().diff(startMoment, "minutes");
-    if (minDiff < 0) { 
+    if (minDiff < 0) {
         // Train is in the future, so the first train of the day has not yet arrived
-        timeToNext = - minDiff+1;
+        timeToNext = - minDiff + 1;
         // OLD CODE - minDiff += 1439} -
         // I REPLACED WITH CODE ABOVE TO REMOVE MY ASSUMPTION ABOUT "CONTINOUS DAYS".  SEE THE README FILE FOR MORE INFORMATION
     } else {
-    // First train was in the past, so calculate the number minutes remaining until the next arrival based on the frequency
-    // divide the number of elapsed minute since start time by the frequency; the remainder the the number of elasped minutes into the next frequency
-    var timeToNext = freq - minDiff % freq;
+        // First train was in the past, so calculate the number minutes remaining until the next arrival based on the frequency
+        // divide the number of elapsed minute since start time by the frequency; the remainder the the number of elasped minutes into the next frequency
+        var timeToNext = freq - minDiff % freq;
     }
     var timeNext = moment().add(timeToNext, "minutes");
     return [timeToNext, timeNext];
@@ -271,6 +348,9 @@ db.ref("trains").on("value", function (s) {
         // use train data to update table
         tableAddTrain(key, trainData.trainName, trainData.trainDest, trainData.trainFirst, trainData.trainFreq)
     });
+    if (!userSignedIn) {
+        $("td:nth-child(1),th:nth-child(1)").hide();
+    }
 }, function (e) {
     // log the error
     console.log("The read failed: " + e.code);
@@ -301,6 +381,8 @@ function remTrain(trainKey) {
  */
 function editTrain(trainKey) {
     if (!flagUpdating) { // only permitting if not already updating a train
+        // update the global trainkey
+        updatingTrainKey = trainKey;
         // stop the timer
         timerStop();
         // clear the tooltips
@@ -346,12 +428,12 @@ function editTrain(trainKey) {
         timeInput.attr("type", "text");
         timeInput.attr("class", "form-control");
         timeInput.attr("value", cTime);
-        timeInput.attr("isvalid","unchecked");
+        timeInput.attr("isvalid", "unchecked");
         timeInput.attr("id", "input-time-" + trainKey);
         $("#data-time-" + trainKey).append(timeInput);
         // add a warning
         var timeInputWarn = $("<div>");
-        timeInputWarn.attr("id","timeInputWarn");
+        timeInputWarn.attr("id", "timeInputWarn");
         $("#data-time-" + trainKey).append(timeInputWarn);
         // set editTrainTime flag to true
         flagUpdateTime = true;
@@ -361,11 +443,11 @@ function editTrain(trainKey) {
             // train start in HH:MM format?
             var fmtRegEx = /^([01]\d|2[0-3]):?([0-5]\d)$/
             if (!fmtRegEx.test(testStart)) {
-                $("#input-time-" + trainKey).attr("isvalid","invalid");
+                $("#input-time-" + trainKey).attr("isvalid", "invalid");
                 $("#timeInputWarn").text("Train time is not in 24 hour time format (HH:mm)");
                 flagUpdateTime = false;
             } else {
-                $("#input-time-" + trainKey).attr("isvalid","valid");
+                $("#input-time-" + trainKey).attr("isvalid", "valid");
                 $("#timeInputWarn").text("");
                 flagUpdateTime = true;
             }
@@ -373,7 +455,7 @@ function editTrain(trainKey) {
     }
 }
 
-function trainSchedule () {
+function trainSchedule() {
     // clear the table and re-post
     db.ref("trains").once("value", function (s) {
         // clear the train table
@@ -400,6 +482,7 @@ function trainSchedule () {
 function cancelUpdate(trainKey) {
     // set the updating flag to permit other train updates at the same time
     flagUpdating = false;
+    updatingTrainKey = "";
     // clear the tooltips
     $(".fa").tooltip('dispose');
     // re-start the time

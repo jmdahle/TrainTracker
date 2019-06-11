@@ -3,13 +3,16 @@
 }
 
 .card {
-    margin-bottom: 32px;
+    margin-bottom: 10px;
 }
 
 #timer {
     color: darkblue;
 }
 
+#authDiv {
+    margin-bottom: 10px;
+}
 #trainFreqWarn, #trainStartWarn, #submitWarn, #timeInputWarn {
     color: red;
     font-size: 70%;
