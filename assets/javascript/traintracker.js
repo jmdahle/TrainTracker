@@ -71,8 +71,35 @@ timerStart()
 timerIsStarted = true;
 
 
+// user login using redirect
+function userLogin () {
+    firebase.auth().signInWithRedirect(authProvider);
 
-// user login
+}
+
+// Authorization on returning from login
+firebase.auth().getRedirectResult().then(function(authResult) {
+    if (authResult.credential) {
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      var token = authResult.credential.accessToken;
+      // ...
+    }
+    // The signed-in user info.
+    var user = authResult.user;
+  }).catch(function(authError) {
+      console.log(authError);
+    // Handle Errors here.
+    var errorCode = authError.code;
+    var errorMessage = authError.message;
+    // The email of the user's account used.
+    var email = authError.email;
+    // The firebase.auth.AuthCredential type that was used.
+    var credential = authError.credential;
+    // ...
+  });
+
+/*
+// user login using POPUP
 function userLogin() {
     firebase.auth().signInWithPopup(authProvider).then(function (authResult) {
         console.log("authResult", authResult);
@@ -89,10 +116,11 @@ function userLogin() {
         // The email of the user's account used.
         var email = authError.email;
         // The firebase.auth.AuthCredential type that was used.
-        var credential = authError.credential;
+        var credential = authError.credential;  
         // ...
     });
 }
+*/
 
 // user logout
 function userLogout() {
@@ -148,6 +176,9 @@ function timerCount() {
     if (timerMilliSeconds <= 0) {
         timerMilliSeconds = 60000; // restart at 60 seconds;
         trainSchedule(); // update the train schedule
+        if (!userSignedIn) {
+            $("td:nth-child(1),th:nth-child(1)").hide();
+        }
     }
 }
 
